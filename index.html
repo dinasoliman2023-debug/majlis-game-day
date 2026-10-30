@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Majlis Game Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: woven Sadu band on top, a 6-step path, the play "stage" on the left and the live scoreboard on the right (stacked on phones). */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --ink:#16262B; --muted:#5A6B6F; --line:#CCD6D3;
+  --sadu:#A8231B; --palm:#2D6A4F; --gold:#B8862B; --night:#1E3A44;
+  --good:#2D6A4F; --bad:#B42318; --chip:#E2E9E6;
+  --display:"Reem Kufi","Segoe UI",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1A1D; --surface:#172529; --ink:#E7EEEC; --muted:#9DB0AE; --line:#2B3E43;
+  --sadu:#E0574C; --palm:#5FB38A; --gold:#E2B14F; --night:#0B1417; --good:#5FB38A; --bad:#F07167; --chip:#20343A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1A1D; --surface:#172529; --ink:#E7EEEC; --muted:#9DB0AE; --line:#2B3E43;
+  --sadu:#E0574C; --palm:#5FB38A; --gold:#E2B14F; --night:#0B1417; --good:#5FB38A; --bad:#F07167; --chip:#20343A; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+[hidden]{display:none!important}
+.sadu{height:18px;background:
+  linear-gradient(135deg,var(--sadu) 25%,transparent 25%) -9px 0/18px 18px,
+  linear-gradient(225deg,var(--sadu) 25%,transparent 25%) -9px 0/18px 18px,
+  linear-gradient(315deg,var(--night) 25%,transparent 25%) 0 0/18px 18px,
+  linear-gradient(45deg,var(--night) 25%,transparent 25%) 0 0/18px 18px,var(--gold)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header .wrap{padding-block:18px 10px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font:700 clamp(26px,4vw,38px)/1.05 var(--display);margin:0;letter-spacing:.2px}
+h1 small{display:block;font:500 14px var(--body);color:var(--muted);margin-top:6px}
+h2{font:700 24px/1.2 var(--display);margin:0 0 4px;text-wrap:balance}
+h3{font:600 16px/1.3 var(--body);margin:0}
+.path{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}
+.path li{font:500 12px var(--body);letter-spacing:.4px;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.path li.on{background:var(--ink);color:var(--bg)}
+.path li.done{color:var(--palm)}
+main .wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding-block:8px 40px}
+@media (max-width:860px){main .wrap{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.lead{color:var(--muted);margin:0;max-width:65ch}
+aside{display:flex;flex-direction:column;gap:14px;min-width:0}
+.board{background:var(--night);color:#F4F1EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.label{font:500 11px var(--body);letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.board .label{color:#C9D6D2}
+.board .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.board .pts{font:700 30px var(--display);font-variant-numeric:tabular-nums}
+.board .game{font:600 17px var(--display)}
+.rules{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;font-size:13.5px}
+.rules dt{font-weight:600}.rules dd{margin:0 0 8px;color:var(--muted)}
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.gamecard{all:unset;cursor:pointer;border:2px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.gamecard:hover{border-color:var(--muted)}
+.gamecard.sel{border-color:var(--sadu);background:var(--surface)}
+.gamecard:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.gamecard .name{font:700 20px var(--display)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font:500 11px var(--body);letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--chip);color:var(--ink)}
+.tag.must{background:var(--sadu);color:#fff}
+.btns{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:600 14px var(--body);border-radius:10px;padding:10px 16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--sadu);border-color:var(--sadu);color:#fff}
+button.go{background:var(--palm);border-color:var(--palm);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+label{font-weight:500;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,select,textarea{font:15px var(--body);padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
+textarea{font:12px/1.45 var(--mono);width:100%;min-height:170px}
+.players{display:grid;gap:10px}
+.prow{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end}
+@media (max-width:520px){.prow{grid-template-columns:1fr 1fr}.prow label:first-child{grid-column:1/-1}}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.msg{padding:10px 12px;border-radius:10px;font-size:14px}
+.msg.err{background:color-mix(in srgb,var(--bad) 12%,var(--surface));color:var(--bad)}
+.msg.ok{background:color-mix(in srgb,var(--good) 14%,var(--surface));color:var(--good)}
+.msg.info{background:var(--chip)}
+.video{position:relative;background:#000;border-radius:12px;overflow:hidden;max-width:100%}
+.video canvas{display:block;width:100%;height:auto}
+.video video{display:none}
+.banner{position:absolute;inset:auto 0 0;padding:8px 12px;background:rgba(0,0,0,.6);color:#fff;font:600 14px var(--body);display:flex;justify-content:space-between;gap:8px}
+.big{font:700 clamp(30px,7vw,54px)/1 var(--display);font-variant-numeric:tabular-nums}
+.twister{font:700 clamp(22px,4vw,32px)/1.3 var(--display);padding:16px;border-radius:12px;background:var(--bg);border:1px dashed var(--line)}
+.freeze-call{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 clamp(40px,9vw,80px) var(--display);color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.6);pointer-events:none}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.facts{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.facts li{padding:8px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.bar{height:10px;border-radius:5px;background:var(--chip);overflow:hidden}.bar i{display:block;height:100%;background:var(--palm)}
+.mvp{display:flex;gap:12px;align-items:center;padding:14px;border-radius:12px;border:2px solid var(--gold)}
+.mvp .star{font:700 34px var(--display);color:var(--gold)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px var(--body);letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.scroll{overflow-x:auto}
+.mono{font-family:var(--mono);font-size:12px;word-break:break-all}
+details summary{cursor:pointer;font-weight:600}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="sadu" aria-hidden="true"></div>
+<header><div class="wrap">
+  <h1>Majlis Game Day <small>The family chooses the fun. The AI judge watches, listens and scores fairly.</small></h1>
+  <ol class="path" id="path"></ol>
+</div></header>
+<main><div class="wrap">
+  <section class="stage" id="stage" aria-live="polite"></section>
+  <aside>
+    <div class="board" id="board"></div>
+    <dl class="rules" id="rules"></dl>
+  </aside>
+</div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+   GAMES + RULES (same rules as games.json in the Python project)
+   ===================================================================== */
+const GAMES = {
+  "Football": {type:"team", input:"video", rounds:1, time:120, must:true,
+    description:"Two teams play a short match. The AI follows the players and the ball, spots goals, keeps score, measures possession and picks the MVP.",
+    points:"1 point for every goal. A goal is when the ball enters the goal zone at the left or right edge of the camera view.",
+    penalties:"Hand ball or pushing: the host gives the ball to the other team (no points).",
+    winning:"The team with more goals wins. MVP = the player who had the ball for the most time.",
+    tie:"Golden goal: play one more minute, the next goal wins.",
+    challenge:"Fixed camera that sees the whole pitch. Every player wears a different bright shirt colour."},
+  "Falcon Freeze": {type:"team", input:"video", rounds:3, time:10,
+    description:"Heritage statue game. Players dance to the music; when it stops, everyone freezes like a falcon for 5 seconds. The AI watches who moves.",
+    points:"Each player who stays frozen earns 1 point for their team.",
+    penalties:"A player who moves during the freeze earns 0 points that round.",
+    winning:"After all rounds, the team with more points wins. MVP = the player who stayed still the most.",
+    tie:"Sudden-death round: one more freeze, the team with fewer movers wins.",
+    challenge:"Stand in one line facing the camera, in player order from left to right on the screen."},
+  "Lisan Challenge": {type:"individual", input:"audio", rounds:2, time:10,
+    description:"Tongue-twister race in Arabic or English. Each player says a twister in 10 seconds. The AI listens, writes what it heard and scores the match.",
+    points:"90% match or more = 3 points, 70% or more = 2, 50% or more = 1, below 50% = 0.",
+    penalties:"Words said after the timer ends are not heard and do not count.",
+    winning:"The player with the most points wins and is the MVP.",
+    tie:"Extra twister for the tied players: the higher match % wins.",
+    challenge:"Read the twister on screen out loud, clearly, before the timer ends."}
+};
+const TWISTERS = {
+  English:["Fast falcons fly far from Fujairah's foggy forts","Six sandy camels sat on sixty sunny stones",
+           "Grandma's great golden gahwa pot glows","Busy boats bring big blue bags to the bay","Dates and dallahs dance on the desert dunes"],
+  Arabic:["خيط حرير على حيط خليل","صقر صغير صاد صيدا سريعا في الصحراء","دلة دانة دارت على دار دنيا",
+          "جمل جميل جلس جنب جبل جليل","نخلة ناصر نبتت نبتة نضرة"]
+};
+/* Shirt / ball colours as hue in degrees */
+const HUES = {red:0, orange:28, yellow:55, green:125, cyan:185, blue:220, purple:280, pink:325};
+const SWATCH = {red:"#D62828", orange:"#F77F00", yellow:"#F2C200", green:"#2A9D3F", cyan:"#1BB3C9", blue:"#1D4ED8", purple:"#7B2CBF", pink:"#E85D9E"};
+const STEPS = ["Choose","Players","Rules","Play","AI judge","Results"];
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const S = {step:1, game:null, players:[], rounds:1, time:60, round:1, turn:0,
+  scores:{}, pp:{}, events:[], facts:{}, report:null, reportText:"", lang:"English", target:null, media:{}};
+const defaultPlayers = () => [
+  {name:"P1", team:"Team A", color:"red"}, {name:"P2", team:"Team A", color:"yellow"},
+  {name:"P3", team:"Team B", color:"blue"}, {name:"P4", team:"Team B", color:"green"}];
+S.players = defaultPlayers();
+
+const $ = (sel, root=document) => root.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const teamsOf = () => ({"Team A": S.players.filter(p=>p.team==="Team A").map(p=>p.name),
+                        "Team B": S.players.filter(p=>p.team==="Team B").map(p=>p.name)});
+const currentPlayer = () => S.players[S.turn % S.players.length].name;
+const fmt = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(Math.max(0,Math.floor(s%60))).padStart(2,"0")}`;
+
+/* =====================================================================
+   SIGNED REPORTS: HMAC-SHA256 (same key + same text as judge/report.py)
+   ===================================================================== */
+const SECRET_KEY = "majlis-game-day-2026-team-key";
+function sha256(msg){
+  const K=[],H=[]; let n=0; const comp={};
+  for(let c=2;n<64;c++){ if(!comp[c]){ for(let i=0;i<313;i+=c) comp[i]=c;
+      H[n]=(Math.pow(c,.5)*4294967296)|0; K[n++]=(Math.pow(c,1/3)*4294967296)|0; } }
+  let h=H.slice(0,8);
+  const l=msg.length, total=Math.ceil((l+9)/64)*64, m=new Uint8Array(total);
+  m.set(msg); m[l]=0x80;
+  const dv=new DataView(m.buffer);
+  dv.setUint32(total-4,(l*8)>>>0); dv.setUint32(total-8,Math.floor(l*8/4294967296));
+  const w=new Int32Array(64);
+  for(let off=0;off<total;off+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getInt32(off+i*4);
+    for(let i=16;i<64;i++){ const a=w[i-15], b=w[i-2];
+      const s0=((a>>>7)|(a<<25))^((a>>>18)|(a<<14))^(a>>>3);
+      const s1=((b>>>17)|(b<<15))^((b>>>19)|(b<<13))^(b>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)|0; }
+    let [A,B,C,D,E,F,G,Hh]=h;
+    for(let i=0;i<64;i++){
+      const S1=((E>>>6)|(E<<26))^((E>>>11)|(E<<21))^((E>>>25)|(E<<7));
+      const t1=(Hh+S1+((E&F)^(~E&G))+K[i]+w[i])|0;
+      const S0=((A>>>2)|(A<<30))^((A>>>13)|(A<<19))^((A>>>22)|(A<<10));
+      const t2=(S0+((A&B)^(A&C)^(B&C)))|0;
+      Hh=G; G=F; F=E; E=(D+t1)|0; D=C; C=B; B=A; A=(t1+t2)|0; }
+    h=[(h[0]+A)|0,(h[1]+B)|0,(h[2]+C)|0,(h[3]+D)|0,(h[4]+E)|0,(h[5]+F)|0,(h[6]+G)|0,(h[7]+Hh)|0];
+  }
+  const out=new Uint8Array(32), odv=new DataView(out.buffer);
+  h.forEach((v,i)=>odv.setInt32(i*4,v)); return out;
+}
+function hmacHex(keyStr,msgStr){
+  const enc=new TextEncoder(); let key=enc.encode(keyStr); const msg=enc.encode(msgStr);
+  if(key.length>64) key=sha256(key);
+  const k=new Uint8Array(64); k.set(key);
+  const inner=new Uint8Array(64+msg.length), outer=new Uint8Array(96);
+  for(let i=0;i<64;i++){ inner[i]=k[i]^0x36; outer[i]=k[i]^0x5c; }
+  inner.set(msg,64); outer.set(sha256(inner),64);
+  return Array.from(sha256(outer),b=>b.toString(16).padStart(2,"0")).join("");
+}
+/* Same text as Python json.dumps(data, sort_keys=True, ensure_ascii=False) */
+function canonical(x){
+  if(x===null) return "null";
+  if(Array.isArray(x)) return "["+x.map(canonical).join(", ")+"]";
+  if(typeof x==="object") return "{"+Object.keys(x).sort().map(k=>JSON.stringify(k)+": "+canonical(x[k])).join(", ")+"}";
+  if(typeof x==="number") return String(x);
+  return JSON.stringify(x);
+}
+function stamp(){ const d=new Date(), p=v=>String(v).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+function makeReport(game, results){
+  const data={judge:"Majlis AI Judge v1", game, created:stamp(), results:JSON.parse(JSON.stringify(results))};
+  return {data, signature:hmacHex(SECRET_KEY, canonical(data))};
+}
+function verifyReport(rep){
+  try{ return typeof rep.signature==="string" && hmacHex(SECRET_KEY, canonical(rep.data))===rep.signature; }
+  catch(e){ return false; }
+}
+
+/* =====================================================================
+   AI MODEL (COCO-SSD object detector, runs in the browser)
+   ===================================================================== */
+let model=null, modelLoading=null;
+function loadModel(){
+  if(model) return Promise.resolve(model);
+  if(!modelLoading) modelLoading = cocoSsd.load({base:"lite_mobilenet_v2"}).then(m=>(model=m));
+  return modelLoading;
+}
+
+/* colour helpers */
+function rgbToHsv(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  let h=0; if(d){ if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; if(h<0) h+=360; }
+  return [h, mx?d/mx:0, mx]; }
+const hueDist=(a,b)=>{ const d=Math.abs(a-b)%360; return Math.min(d,360-d); };
+function dominantHue(img){ // ImageData -> hue or null
+  const hist=new Float32Array(36); let n=0, total=img.data.length/4;
+  for(let i=0;i<img.data.length;i+=4){ const [h,s,v]=rgbToHsv(img.data[i],img.data[i+1],img.data[i+2]);
+    if(s>0.35 && v>0.25){ hist[Math.floor(h/10)%36]++; n++; } }
+  if(n<total*0.08) return null;
+  let best=0, bi=0; for(let i=0;i<36;i++){ const s=hist[(i+35)%36]+hist[i]+hist[(i+1)%36]; if(s>best){best=s;bi=i;} }
+  return bi*10+5;
+}
+function identifyPlayer(ctx, box){ // box [x,y,w,h] in ctx pixels
+  const [x,y,w,h]=box, sx=Math.max(0,Math.round(x+w*0.2)), sy=Math.max(0,Math.round(y+h*0.2));
+  const sw=Math.max(1,Math.round(w*0.6)), sh=Math.max(1,Math.round(h*0.35));
+  let img; try{ img=ctx.getImageData(sx,sy,sw,sh); }catch(e){ return null; }
+  const hue=dominantHue(img); if(hue===null) return null;
+  let best=null, bd=999;
+  for(const p of S.players){ const d=hueDist(hue,HUES[p.color]); if(d<bd){bd=d;best=p.name;} }
+  return bd<=28 ? best : null;
+}
+function findBallByColor(ctx,W,H,color){
+  const step=2, img=ctx.getImageData(0,0,W,H), target=HUES[color]; let sx=0,sy=0,n=0;
+  for(let y=0;y<H;y+=step) for(let x=0;x<W;x+=step){ const i=(y*W+x)*4;
+    const [h,s,v]=rgbToHsv(img.data[i],img.data[i+1],img.data[i+2]);
+    if(s>0.5 && v>0.4 && hueDist(h,target)<14){ sx+=x; sy+=y; n++; } }
+  return n>=4 ? [sx/n, sy/n] : null;
+}
+
+/* =====================================================================
+   SOUND: Falcon Freeze music (made in the browser, no files) + beeps
+   ===================================================================== */
+let audioCtx=null;
+function ac(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function beep(freq=880,dur=0.15){ try{ const a=ac(), o=a.createOscillator(), g=a.createGain();
+  o.frequency.value=freq; g.gain.setValueAtTime(0.2,a.currentTime); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dur);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+dur);}catch(e){} }
+function startMusic(){
+  const a=ac(), scale=[293.7,311.1,370,392,440,466.2,523.3,587.3]; // D Hijaz
+  const pattern=[0,2,3,4,3,2,1,0,4,5,4,3,2,3,1,0]; let i=0;
+  const timer=setInterval(()=>{
+    const t=a.currentTime, o=a.createOscillator(), g=a.createGain();
+    o.type="triangle"; o.frequency.value=scale[pattern[i%pattern.length]];
+    g.gain.setValueAtTime(0.18,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t+0.3);
+    if(i%2===0){ const d=a.createOscillator(), dg=a.createGain(); d.frequency.setValueAtTime(140,t); d.frequency.exponentialRampToValueAtTime(50,t+0.12);
+      dg.gain.setValueAtTime(0.5,t); dg.gain.exponentialRampToValueAtTime(0.001,t+0.15); d.connect(dg).connect(a.destination); d.start(t); d.stop(t+0.16); }
+    i++; },230);
+  return ()=>clearInterval(timer);
+}
+
+/* =====================================================================
+   MEDIA: camera or uploaded video drawn on a canvas
+   ===================================================================== */
+function stopMedia(){
+  const m=S.media; if(m.raf) cancelAnimationFrame(m.raf); if(m.stream) m.stream.getTracks().forEach(t=>t.stop());
+  if(m.timer) clearInterval(m.timer); if(m.music) m.music(); if(m.rec && m.rec.state==="recording") m.rec.stop();
+  if(m.speech) try{ m.speech.abort(); }catch(e){}
+  S.media={};
+}
+async function openSource(video, kind, file){
+  if(kind==="camera"){
+    if(!navigator.mediaDevices?.getUserMedia) throw new Error("This browser cannot open the camera. Use Chrome, or upload a video.");
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:"environment"},audio:false});
+    S.media.stream=stream; video.srcObject=stream; video.muted=true;
+  } else { video.src=URL.createObjectURL(file); video.muted=false; }
+  video.playsInline=true; await video.play();
+  await new Promise(r=>{ if(video.videoWidth) r(); else video.onloadedmetadata=()=>r(); });
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+function renderChrome(){
+  $("#path").innerHTML=STEPS.map((s,i)=>`<li class="${i+1===S.step?"on":(i+1<S.step?"done":"")}">${i+1} ${s}</li>`).join("");
+  const g=S.game?GAMES[S.game]:null;
+  let b=`<span class="label">Scoreboard</span>`;
+  if(!g) b+=`<span>Choose a game to start.</span>`;
+  else {
+    b+=`<div class="game">${esc(S.game)}</div><span class="label">AI judges with ${g.input} · ${g.type} game</span>`;
+    if(Object.keys(S.scores).length){
+      b+=`<span class="label">Round ${Math.min(S.round,S.rounds)} of ${S.rounds}${g.type==="individual"&&S.step<6?` · ${esc(currentPlayer())}'s turn`:""}</span>`;
+      for(const [k,v] of Object.entries(S.scores)) b+=`<div class="row"><span>${esc(k)}</span><span class="pts">${v}</span></div>`;
+    }
+  }
+  $("#board").innerHTML=b;
+  $("#rules").innerHTML = g ? ["points","penalties","winning","tie"].map(k=>`<dt>${k[0].toUpperCase()+k.slice(1)}</dt><dd>${esc(g[k])}</dd>`).join("")
+    : `<dt>How it works</dt><dd>Pick a game, add the family, read the rules, play, let the AI judge, then see who won and why.</dd>`;
+}
+function go(step){ stopMedia(); S.step=step; render(); window.scrollTo({top:0,behavior:"smooth"}); }
+function render(){ renderChrome(); ({1:step1,2:step2,3:step3,4:step4,5:step5,6:step6})[S.step](); }
+
+/* ---------- 1 CHOOSE A GAME ---------- */
+function step1(){
+  const sel=S.game||"Football";
+  $("#stage").innerHTML=`<div><h2>Choose a game</h2><p class="lead">Football is the main event. Falcon Freeze and Lisan Challenge are the team's own heritage games.</p></div>
+  <div class="games">${Object.entries(GAMES).map(([n,g])=>`<button class="gamecard ${n===sel?"sel":""}" data-g="${esc(n)}" aria-pressed="${n===sel}">
+    <span class="name">${esc(n)}</span><span class="tags">${g.must?'<span class="tag must">Required</span>':""}<span class="tag">${g.type}</span><span class="tag">AI: ${g.input}</span></span>
+    <span class="lead">${esc(g.description)}</span></button>`).join("")}</div>
+  <div class="btns"><button class="primary" id="choose">Choose ${esc(sel)}</button></div>`;
+  S.game=sel;
+  document.querySelectorAll(".gamecard").forEach(c=>c.onclick=()=>{ S.game=c.dataset.g; step1(); renderChrome(); });
+  $("#choose").onclick=()=>go(2);
+}
+
+/* ---------- 2 PLAYERS & TEAMS ---------- */
+function step2(){
+  const g=GAMES[S.game];
+  const rows=S.players.map((p,i)=>`<div class="prow">
+    <label for="pn${i}">Player ${i+1} name<input id="pn${i}" value="${esc(p.name)}" maxlength="16"></label>
+    ${g.type==="team"?`<label for="pt${i}">Team<select id="pt${i}"><option ${p.team==="Team A"?"selected":""}>Team A</option><option ${p.team==="Team B"?"selected":""}>Team B</option></select></label>`:"<span></span>"}
+    ${S.game==="Football"?`<label for="pc${i}">Shirt colour<select id="pc${i}">${Object.keys(HUES).map(c=>`<option ${p.color===c?"selected":""}>${c}</option>`).join("")}</select></label>`:"<span></span>"}
+  </div>`).join("");
+  $("#stage").innerHTML=`<div><h2>Players and teams</h2><p class="lead">${S.game==="Football"?"Each player wears a different bright shirt. The AI uses the shirt colour to know who has the ball.":S.game==="Falcon Freeze"?"Players stand in this order from left to right on the camera screen.":"Each player takes a turn every round."}</p></div>
+  <div class="players">${rows}</div>
+  <div class="btns"><button id="addp" ${S.players.length>=6?"disabled":""}>Add player</button><button id="remp" ${S.players.length<=2?"disabled":""}>Remove last player</button></div>
+  <div id="perr"></div>
+  <div class="btns"><button id="back">Back</button><button class="primary" id="save">Save teams</button></div>`;
+  const read=()=>S.players=S.players.map((p,i)=>({name:($("#pn"+i).value.trim()||`P${i+1}`),
+    team:$("#pt"+i)?$("#pt"+i).value:p.team, color:$("#pc"+i)?$("#pc"+i).value:p.color}));
+  $("#addp").onclick=()=>{ read(); const used=S.players.map(p=>p.color); const c=Object.keys(HUES).find(x=>!used.includes(x));
+    S.players.push({name:`P${S.players.length+1}`,team:S.players.length%2?"Team B":"Team A",color:c}); step2(); };
+  $("#remp").onclick=()=>{ read(); S.players.pop(); step2(); };
+  $("#back").onclick=()=>{ read(); go(1); };
+  $("#save").onclick=()=>{ read(); const errs=[], names=S.players.map(p=>p.name);
+    if(new Set(names).size<names.length) errs.push("Player names must be different.");
+    if(g.type==="team" && (!S.players.some(p=>p.team==="Team A")||!S.players.some(p=>p.team==="Team B"))) errs.push("Each team needs at least one player.");
+    if(S.game==="Football" && new Set(S.players.map(p=>p.color)).size<S.players.length) errs.push("Each player needs a different shirt colour.");
+    $("#perr").innerHTML=errs.map(e=>`<div class="msg err">${esc(e)}</div>`).join("");
+    if(!errs.length) go(3); };
+}
+
+/* ---------- 3 RULES & READY ---------- */
+function step3(){
+  const g=GAMES[S.game], t=teamsOf();
+  $("#stage").innerHTML=`<div><h2>Rules and ready</h2><p class="lead">${esc(g.challenge)}</p></div>
+  ${g.type==="team"?`<div class="grid2">${Object.entries(t).map(([k,v])=>`<div class="facts"><li><b>${k}</b>: ${v.map(n=>{const p=S.players.find(x=>x.name===n);
+      return S.game==="Football"?`<span class="swatch" style="background:${SWATCH[p.color]}"></span>${esc(n)}`:esc(n);}).join(", ")}</li></div>`).join("")}</div>`
+    :`<p><b>Players:</b> ${S.players.map(p=>esc(p.name)).join(", ")}</p>`}
+  <dl class="rules" style="margin:0">${["points","penalties","winning","tie"].map(k=>`<dt>${k[0].toUpperCase()+k.slice(1)}</dt><dd>${esc(g[k])}</dd>`).join("")}</dl>
+  <div class="grid2">
+    <label for="rr">Rounds<input id="rr" type="number" min="1" max="5" value="${g.rounds}"></label>
+    <label for="rt">${S.game==="Football"?"Match length (seconds)":S.game==="Falcon Freeze"?"Longest music time (seconds)":"Time per turn (seconds)"}<input id="rt" type="number" min="5" max="600" value="${g.time}"></label>
+    ${S.game==="Lisan Challenge"?`<label for="rl">Twister language<select id="rl"><option ${S.lang==="English"?"selected":""}>English</option><option ${S.lang==="Arabic"?"selected":""}>Arabic</option></select></label>`:""}
+  </div>
+  <label style="flex-direction:row;align-items:center;gap:8px;color:var(--ink)"><input type="checkbox" id="ready"> Everyone is ready</label>
+  <div class="btns"><button id="back">Back</button><button class="primary" id="start" disabled>Start game</button></div>`;
+  $("#ready").onchange=e=>$("#start").disabled=!e.target.checked;
+  $("#back").onclick=()=>go(2);
+  $("#start").onclick=()=>{
+    S.rounds=+$("#rr").value||g.rounds; S.time=+$("#rt").value||g.time; if($("#rl")) S.lang=$("#rl").value;
+    S.round=1; S.turn=0; S.events=[]; S.facts={}; S.report=null; S.reportText=""; S.target=null;
+    S.scores = g.type==="team" ? {"Team A":0,"Team B":0} : Object.fromEntries(S.players.map(p=>[p.name,0]));
+    S.pp = Object.fromEntries(S.players.map(p=>[p.name,0]));
+    S.motion = Object.fromEntries(S.players.map(p=>[p.name,0]));
+    go(4); loadModel().catch(()=>{});
+  };
+}
+
+/* ---------- 4 ROUND IN PLAY ---------- */
+function step4(){
+  if(S.game==="Football") return footballPlay();
+  if(S.game==="Falcon Freeze") return freezePlay();
+  return lisanPlay();
+}
+function sourcePicker(){
+  return `<div class="grid2">
+    <label for="src">Game video<select id="src"><option value="camera">Live camera (laptop or phone)</option><option value="file">Upload a recorded video</option></select></label>
+    <label for="vf" id="vfwrap" hidden>Video file<input id="vf" type="file" accept="video/*"></label></div>`;
+}
+function bindPicker(){ $("#src").onchange=()=>{ $("#vfwrap").hidden=$("#src").value!=="file"; }; }
+function stageVideo(extra=""){ return `<div class="video" id="vbox"><video id="vid" playsinline></video><canvas id="cv" width="640" height="360"></canvas>${extra}
+  <div class="banner"><span id="bl">Waiting to start</span><span id="br"></span></div></div>`; }
+
+/* ======== FOOTBALL ======== */
+function footballPlay(){
+  $("#stage").innerHTML=`<div><h2>Round ${S.round} of ${S.rounds}: football match</h2><p class="lead">The AI watches live: red boxes are players it recognised by shirt colour, green is the player with the ball, white bands are the goals.</p></div>
+  ${sourcePicker()}
+  <div class="grid2">
+    <label for="att">Team A scores in the<select id="att"><option value="right">Right goal</option><option value="left">Left goal</option></select></label>
+    <label for="gz">Goal zone width: <span id="gzv">8</span>%<input id="gz" type="range" min="3" max="20" value="8"></label>
+    <label for="bm">Find the ball with<select id="bm"><option value="ai">AI detector</option><option value="color">Ball colour (backup)</option></select></label>
+    <label for="bc" id="bcw" hidden>Ball colour<select id="bc">${Object.keys(HUES).map(c=>`<option ${c==="orange"?"selected":""}>${c}</option>`).join("")}</select></label>
+  </div>
+  ${stageVideo()}
+  <div class="btns"><button class="go" id="kick">Kick off</button><button class="primary" id="end" disabled>End match and judge</button>
+    <span class="big" id="clock">${fmt(S.time)}</span></div>
+  <div id="fmsg"></div>
+  ${manualBox()}`;
+  bindPicker(); bindManual();
+  $("#gz").oninput=e=>$("#gzv").textContent=e.target.value;
+  $("#bm").onchange=()=>$("#bcw").hidden=$("#bm").value!=="color";
+  $("#kick").onclick=startFootball;
+}
+async function startFootball(){
+  const video=$("#vid"), cv=$("#cv"), ctx=cv.getContext("2d",{willReadFrequently:true}), msg=$("#fmsg");
+  const kind=$("#src").value, file=$("#vf").files[0];
+  if(kind==="file" && !file){ msg.innerHTML=`<div class="msg err">Choose a video file first.</div>`; return; }
+  $("#kick").disabled=true; msg.innerHTML=`<div class="msg info">Loading the AI model…</div>`;
+  try{ await loadModel(); await openSource(video,kind,file); }
+  catch(e){ msg.innerHTML=`<div class="msg err">${esc(e.message||e)}. The AI model needs internet the first time.</div>`; $("#kick").disabled=false; return; }
+  msg.innerHTML="";
+  cv.width=640; cv.height=Math.round(640*video.videoHeight/video.videoWidth);
+  const work=document.createElement("canvas"); work.width=cv.width; work.height=cv.height;
+  const wctx=work.getContext("2d",{willReadFrequently:true});   // clean frame for the AI (no drawings)
+  const W=cv.width, H=cv.height, zone=+$("#gz").value/100, attacks=$("#att").value, ballMode=$("#bm").value, ballColor=$("#bc").value;
+  const st={poss:Object.fromEntries(S.players.map(p=>[p.name,0])), score:{"Team A":0,"Team B":0}, events:[], inGoal:false,
+            frames:0, ballFrames:0, people:[], ball:null, holder:null, start:performance.now(), busy:false, done:false};
+  S.media.fb=st;
+  // record what the AI sees (for the demo video)
+  try{ const rec=new MediaRecorder(cv.captureStream(20),{mimeType:"video/webm"}); const chunks=[];
+    rec.ondataavailable=e=>chunks.push(e.data); rec.onstop=()=>{ S.aiVideo=URL.createObjectURL(new Blob(chunks,{type:"video/webm"})); };
+    rec.start(1000); S.media.rec=rec; }catch(e){}
+  const elapsed=()=> kind==="file" ? video.currentTime : (performance.now()-st.start)/1000;
+  const draw=()=>{
+    ctx.drawImage(video,0,0,W,H);
+    const gz=zone*W; ctx.fillStyle="rgba(255,255,255,.18)"; ctx.fillRect(0,0,gz,H); ctx.fillRect(W-gz,0,gz,H);
+    ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.strokeRect(0,0,gz,H); ctx.strokeRect(W-gz,0,gz,H);
+    ctx.font="600 13px sans-serif";
+    for(const p of st.people){ const [x,y,w,h]=p.box, on=p.name===st.holder; ctx.strokeStyle=on?"#2EE66B":"#FF3B30"; ctx.lineWidth=on?3:2;
+      ctx.strokeRect(x,y,w,h); ctx.fillStyle=ctx.strokeStyle; ctx.fillText(p.name+(on?" (ball)":""),x,Math.max(12,y-4)); }
+    if(st.ball){ ctx.strokeStyle="#FFD60A"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(st.ball[0],st.ball[1],10,0,7); ctx.stroke(); ctx.fillStyle="#FFD60A"; ctx.fillText("BALL",st.ball[0]+12,st.ball[1]); }
+    ctx.fillStyle="rgba(0,0,0,.65)"; ctx.fillRect(W/2-95,0,190,26); ctx.fillStyle="#fff"; ctx.font="700 15px sans-serif";
+    ctx.fillText(`A ${st.score["Team A"]} - ${st.score["Team B"]} B   ${fmt(elapsed())}`,W/2-85,18);
+  };
+  const detect=async()=>{
+    if(st.busy||st.done) return; st.busy=true;
+    try{
+      wctx.drawImage(video,0,0,W,H);
+      const preds=await model.detect(work,20,0.2);
+      const people=[]; let ball=null, bs=0;
+      for(const p of preds){
+        if(p.class==="person" && p.score>=0.4){ const name=identifyPlayer(wctx,p.bbox); if(name) people.push({name,box:p.bbox}); }
+        else if(p.class==="sports ball" && p.score>bs){ bs=p.score; ball=[p.bbox[0]+p.bbox[2]/2,p.bbox[1]+p.bbox[3]/2]; }
+      }
+      if(ballMode==="color") ball=findBallByColor(wctx,W,H,ballColor);
+      st.frames++; st.people=people; st.ball=ball; st.holder=null;
+      if(ball){ st.ballFrames++;
+        let best=1e9, near=null;
+        for(const p of people){ const [x,y,w,h]=p.box, d=Math.hypot(ball[0]-(x+w/2),ball[1]-(y+h)); if(d<best){best=d;near=p;} }
+        if(near && best<near.box[3]){ st.holder=near.name; st.poss[near.name]++; }
+        const bx=ball[0]/W, t=elapsed();
+        if(!st.inGoal && (bx<zone||bx>1-zone)){
+          const side=bx>0.5?"right":"left", team=side===attacks?"Team A":"Team B";
+          st.score[team]++; st.inGoal=true; beep(988,0.4);
+          draw(); const shot=cv.toDataURL("image/jpeg",0.7);
+          st.events.push({time_s:Math.round(t*10)/10, event:"GOAL", team, reason:`Ball entered the ${side} goal zone at ${t.toFixed(1)}s`, shot});
+          $("#bl").textContent=`GOAL ${team}!`;
+        } else if(st.inGoal && bx>0.3 && bx<0.7) st.inGoal=false;
+      }
+    }catch(e){ console.error(e); }
+    st.busy=false;
+  };
+  const loop=()=>{ if(st.done) return; draw(); detect();
+    const t=elapsed(), left=S.time-t; $("#clock").textContent=fmt(Math.max(0,left));
+    $("#br").textContent=st.holder?`${st.holder} has the ball`:"";
+    if((kind==="camera" && left<=0) || (kind==="file" && video.ended)) return finishFootball();
+    S.media.raf=requestAnimationFrame(loop); };
+  $("#end").disabled=false; $("#end").onclick=finishFootball; $("#bl").textContent="Match in play"; beep(660,0.3);
+  loop();
+}
+function finishFootball(){
+  const st=S.media.fb; if(!st||st.done) return; st.done=true; beep(440,0.6);
+  const totalPoss=Object.values(st.poss).reduce((a,b)=>a+b,0)||1, teams=teamsOf();
+  const teamPoss=Object.fromEntries(Object.entries(teams).map(([k,v])=>[k,v.reduce((a,n)=>a+st.poss[n],0)]));
+  const teamTotal=Object.values(teamPoss).reduce((a,b)=>a+b,0)||1;
+  const r1=x=>Math.round(x*10)/10;
+  const teamPct=Object.fromEntries(Object.entries(teamPoss).map(([k,v])=>[k,r1(v/teamTotal*100)]));
+  const mvp=Object.values(st.poss).some(v=>v>0)?Object.keys(st.poss).reduce((a,b)=>st.poss[b]>st.poss[a]?b:a):null;
+  S.shots=st.events.map(e=>e.shot);
+  const results={score:st.score, events:st.events.map(({shot,...e})=>e), possession_percent_team:teamPct,
+    team_most_possession:Object.values(teamPoss).some(v=>v>0)?(teamPct["Team A"]>=teamPct["Team B"]?"Team A":"Team B"):null,
+    possession_percent_player:Object.fromEntries(Object.entries(st.poss).map(([k,v])=>[k,r1(v/totalPoss*100)])),
+    mvp, mvp_reason: mvp?`${mvp} had the ball for the most time (${r1(st.poss[mvp]/totalPoss*100)}% of possession)`:"No possession detected",
+    frames_analyzed:st.frames, ball_seen_percent:r1(st.ballFrames/Math.max(st.frames,1)*100)};
+  S.snapshot=$("#cv").toDataURL("image/jpeg",0.7);
+  const rec=S.media.rec; if(rec && rec.state==="recording") rec.stop();
+  S.report=makeReport("Football",results); S.reportText=JSON.stringify(S.report,null,2);
+  setTimeout(()=>go(5),300);
+}
+
+/* ======== FALCON FREEZE ======== */
+function freezePlay(){
+  $("#stage").innerHTML=`<div><h2>Round ${S.round} of ${S.rounds}: Falcon Freeze</h2><p class="lead">Dance while the music plays. When it stops, freeze like a falcon for 5 seconds. Players stand left to right: ${S.players.map(p=>esc(p.name)).join(" · ")}.</p></div>
+  ${sourcePicker()}
+  <label for="th">Movement threshold: <span id="thv">1.0</span>% (higher = more forgiving)<input id="th" type="range" min="0.2" max="6" step="0.1" value="1.0"></label>
+  ${stageVideo(`<div class="freeze-call" id="call"></div>`)}
+  <div class="btns"><button class="go" id="music">Start the music</button><span class="big" id="clock"></span></div>
+  <div id="fmsg"></div>${manualBox()}`;
+  bindPicker(); bindManual();
+  $("#th").oninput=e=>$("#thv").textContent=(+e.target.value).toFixed(1);
+  $("#music").onclick=startFreeze;
+}
+async function startFreeze(){
+  const video=$("#vid"), cv=$("#cv"), ctx=cv.getContext("2d",{willReadFrequently:true}), msg=$("#fmsg");
+  const kind=$("#src").value, file=$("#vf").files[0];
+  if(kind==="file" && !file){ msg.innerHTML=`<div class="msg err">Choose a video file first.</div>`; return; }
+  $("#music").disabled=true;
+  try{ await openSource(video,kind,file); }catch(e){ msg.innerHTML=`<div class="msg err">${esc(e.message||e)}</div>`; $("#music").disabled=false; return; }
+  cv.width=640; cv.height=Math.round(640*video.videoHeight/video.videoWidth);
+  const W=cv.width, H=cv.height, n=S.players.length, small=document.createElement("canvas"); small.width=160; small.height=Math.round(160*H/W);
+  const sctx=small.getContext("2d",{willReadFrequently:true});
+  const st={phase:kind==="file"?"freeze":"music", per:Array.from({length:n},()=>[]), peak:Array(n).fill(0), peakT:Array(n).fill(0), prev:null, last:Array(n).fill(0)};
+  S.media.fr=st;
+  const musicLen=kind==="file"?0:4+Math.random()*Math.max(1,S.time-4);
+  let t0=performance.now(), freezeStart=null;
+  if(kind==="camera"){ S.media.music=startMusic(); $("#bl").textContent="Music! Dance!"; }
+  else { freezeStart=performance.now(); $("#bl").textContent="Judging the uploaded freeze"; }
+  const loop=()=>{
+    ctx.drawImage(video,0,0,W,H);
+    const now=performance.now();
+    if(st.phase==="music" && (now-t0)/1000>=musicLen){ S.media.music(); S.media.music=null; st.phase="freeze"; freezeStart=now; beep(1200,0.3);
+      $("#call").textContent="FREEZE!"; $("#bl").textContent="Freeze like a falcon!"; }
+    if(st.phase==="freeze"){
+      const ft=(now-freezeStart)/1000;
+      $("#clock").textContent = kind==="camera" ? `Hold: ${Math.max(0,5-ft).toFixed(1)}s` : "";
+      sctx.drawImage(video,0,0,small.width,small.height);
+      const d=sctx.getImageData(0,0,small.width,small.height).data, gray=new Float32Array(small.width*small.height);
+      for(let i=0;i<gray.length;i++) gray[i]=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+      if(st.prev && ft>0.7){
+        for(let k=0;k<n;k++){ let ch=0, tot=0; const x0=Math.floor(k*small.width/n), x1=Math.floor((k+1)*small.width/n);
+          for(let y=0;y<small.height;y++) for(let x=x0;x<x1;x++){ tot++; if(Math.abs(gray[y*small.width+x]-st.prev[y*small.width+x])>25) ch++; }
+          const v=ch/tot*100; st.per[k].push(v); st.last[k]=v; if(v>st.peak[k]){st.peak[k]=v; st.peakT[k]=ft;} }
+      }
+      st.prev=gray;
+      // zone overlay
+      const thr=+$("#th").value;
+      for(let k=0;k<n;k++){ const x0=k*W/n, moving=st.last[k]>thr;
+        ctx.strokeStyle=moving?"#FF3B30":"#2EE66B"; ctx.lineWidth=3; ctx.strokeRect(x0+3,3,W/n-6,H-6);
+        ctx.fillStyle=ctx.strokeStyle; ctx.font="700 15px sans-serif"; ctx.fillText(`${S.players[k].name} ${st.last[k].toFixed(1)}%`,x0+10,24); }
+      if((kind==="camera" && ft>=5) || (kind==="file" && video.ended)) return finishFreeze();
+    } else { $("#clock").textContent="♪"; }
+    S.media.raf=requestAnimationFrame(loop);
+  };
+  loop();
+}
+function pct90(a){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); const i=0.9*(s.length-1), lo=Math.floor(i), hi=Math.ceil(i); return s[lo]+(s[hi]-s[lo])*(i-lo); }
+function finishFreeze(){
+  const st=S.media.fr; const thr=+$("#th").value; $("#call").textContent="";
+  const players={}, moved=[], frozen=[];
+  S.players.forEach((p,k)=>{ const m=Math.round(pct90(st.per[k])*100)/100, mv=m>thr;
+    (mv?moved:frozen).push(p.name);
+    players[p.name]={motion_percent:m, moved:mv, reason: mv?`${p.name} moved (motion ${m.toFixed(2)}% > ${thr}%, biggest move at ${st.peakT[k].toFixed(1)}s)`
+                                                   :`${p.name} stayed frozen (motion ${m.toFixed(2)}% <= ${thr}%)`}; });
+  S.snapshot=$("#cv").toDataURL("image/jpeg",0.7); S.shots=[];
+  S.report=makeReport("Falcon Freeze",{threshold_percent:thr, players, moved, frozen, frames_compared:st.per[0].length});
+  S.reportText=JSON.stringify(S.report,null,2); beep(700,0.3);
+  setTimeout(()=>go(5),400);
+}
+
+/* ======== LISAN CHALLENGE ======== */
+function norm(t){ return t.toLowerCase().replace(/[ً-ْـ]/g,"").replace(/[إأآا]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي")
+  .replace(/[^\p{L}\p{N}\s]/gu,"").split(/\s+/).filter(Boolean).join(" "); }
+function similarity(a,b){ a=norm(a); b=norm(b); if(!a&&!b) return 100; const m=a.length, n=b.length; let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; }
+  return Math.round((1-prev[n]/Math.max(m,n,1))*1000)/10; }
+const pointsFor=p=>p>=90?3:p>=70?2:p>=50?1:0;
+function lisanPlay(){
+  const player=currentPlayer();
+  if(!S.target){ const list=TWISTERS[S.lang]; S.target=list[Math.floor(Math.random()*list.length)]; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  $("#stage").innerHTML=`<div><h2>Round ${S.round} of ${S.rounds}: ${esc(player)}'s turn</h2><p class="lead">Press Speak, then say the twister before the timer ends. The AI listens and writes what it hears.</p></div>
+  <div class="twister" dir="auto">${esc(S.target)}</div>
+  <div class="btns"><button class="go" id="speak" ${SR?"":"disabled"}>Speak now</button><span class="big" id="clock">${fmt(S.time)}</span></div>
+  <div><h3>The AI hears</h3><p class="twister" style="font-size:20px;min-height:58px" dir="auto" id="heard">…</p></div>
+  ${SR?"":`<div class="msg err">Speech recognition needs Google Chrome or Microsoft Edge. Open this page in Chrome to play Lisan Challenge.</div>`}
+  <div id="fmsg"></div>${manualBox()}`;
+  bindManual();
+  if(SR) $("#speak").onclick=()=>{
+    const rec=new SR(); rec.lang=S.lang==="Arabic"?"ar-AE":"en-US"; rec.interimResults=true; rec.continuous=true;
+    let finalText="", interim="", start=performance.now(), ended=false;
+    S.media.speech=rec; $("#speak").disabled=true;
+    rec.onresult=e=>{ interim=""; for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i];
+      if(r.isFinal) finalText+=r[0].transcript+" "; else interim+=r[0].transcript; }
+      $("#heard").textContent=(finalText+interim).trim()||"…"; };
+    rec.onerror=e=>{ if(e.error==="not-allowed") $("#fmsg").innerHTML=`<div class="msg err">Microphone blocked. Allow the microphone in the browser address bar and try again.</div>`; };
+    const finish=()=>{ if(ended) return; ended=true; clearInterval(S.media.timer); try{ rec.stop(); }catch(e){}
+      setTimeout(()=>{ const heard=(finalText+interim).trim(), pct=similarity(heard,S.target), pts=pointsFor(pct);
+        S.report=makeReport("Lisan Challenge",{player, language:S.lang, target:S.target, heard, match_percent:pct, points:pts,
+          time_limit_s:S.time, reason:`AI heard "${heard||"(nothing)"}" = ${pct}% match with the twister -> ${pts} point(s)`});
+        S.reportText=JSON.stringify(S.report,null,2); S.snapshot=null; S.shots=[]; go(5); },700); };
+    rec.onend=()=>{ if(!ended && (performance.now()-start)/1000<S.time) try{ rec.start(); }catch(e){} };
+    rec.start(); beep(880,0.2);
+    S.media.timer=setInterval(()=>{ const left=S.time-(performance.now()-start)/1000; $("#clock").textContent=fmt(Math.max(0,left));
+      if(left<=0){ beep(440,0.4); finish(); } },200);
+  };
+}
+
+/* ---------- host backup: manual score ---------- */
+function manualBox(){ return `<details><summary>Host backup: manual score (if the AI cannot see the play)</summary>
+  <div class="btns" style="margin-top:10px">${Object.keys(S.scores).map(k=>`<button data-m="${esc(k)}">+1 ${esc(k)}</button>`).join("")}</div></details>`; }
+function bindManual(){ document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ S.scores[b.dataset.m]++;
+  S.events.push({round:S.round, event:"Manual point", who:b.dataset.m, reason:"Added by the host"}); renderChrome(); }); }
+
+/* ---------- 5 AI JUDGE RESULTS ---------- */
+function step5(){
+  const g=GAMES[S.game];
+  $("#stage").innerHTML=`<div><h2>AI judge results</h2><p class="lead">The AI signs its report with a secret key (HMAC-SHA256). If anyone changes a single number, the signature no longer matches and the app refuses the result.</p></div>
+  <div id="findings"></div>
+  <details ${S.reportText?"":"open"}><summary>Signed report (edit a number to test, or paste a report from the Python judge)</summary>
+    <label for="rep" style="margin-top:10px">Report<textarea id="rep" spellcheck="false">${esc(S.reportText)}</textarea></label></details>
+  <div id="verdict"></div>
+  <div class="btns"><button id="back">Back to the round</button><button class="primary" id="apply" disabled>Apply AI results</button></div>`;
+  $("#back").onclick=()=>go(4);
+  $("#rep").oninput=check; check();
+  function check(){
+    S.reportText=$("#rep").value; let rep=null, ok=false, why="";
+    try{ rep=JSON.parse(S.reportText); ok=verifyReport(rep); if(ok && rep.data.game!==S.game){ ok=false; why=" This report is for a different game."; } }
+    catch(e){ why=S.reportText.trim()?" The report text is not valid.":""; }
+    if(!S.reportText.trim()){ $("#verdict").innerHTML=`<div class="msg info">No report yet. Play the round first, or paste a report.</div>`; $("#findings").innerHTML=""; $("#apply").disabled=true; return; }
+    $("#verdict").innerHTML= ok?`<div class="msg ok">Verified: this report came from the Majlis AI judge and was not changed.</div>`
+      :`<div class="msg err">Report rejected: it was changed, or it did not come from our AI judge.${esc(why)}</div>`;
+    $("#apply").disabled=!ok; $("#findings").innerHTML= ok?findingsHTML(rep.data.results):"";
+    $("#apply").onclick=()=>applyReport(rep.data.results);
+  }
+}
+function findingsHTML(r){
+  let h="";
+  if(S.game==="Football"){
+    h+=`<div class="grid2"><div><span class="label">Score</span><div class="big">A ${r.score["Team A"]} – ${r.score["Team B"]} B</div></div>
+       <div><b>Team with the ball the most:</b> ${esc(r.team_most_possession||"–")}<br>${Object.entries(r.possession_percent_team).map(([k,v])=>`${esc(k)} ${v}%`).join(" · ")}</div></div>`;
+    h+=`<ul class="facts">${r.events.length?r.events.map((e,i)=>`<li><b>${e.time_s}s · GOAL ${esc(e.team)}</b> – ${esc(e.reason)}${S.shots&&S.shots[i]?`<br><img alt="Goal moment" src="${S.shots[i]}" style="margin-top:6px;border-radius:8px;max-width:420px;width:100%">`:""}</li>`).join(""):"<li>No goals detected.</li>"}</ul>`;
+    h+=`<div><h3>Possession by player</h3>${Object.entries(r.possession_percent_player).map(([k,v])=>`<div style="display:grid;grid-template-columns:80px 1fr 52px;gap:8px;align-items:center;margin-top:6px"><span>${esc(k)}</span><span class="bar"><i style="width:${v}%"></i></span><span style="font-variant-numeric:tabular-nums">${v}%</span></div>`).join("")}</div>`;
+    h+=`<div class="mvp"><span class="star">MVP</span><div><b>${esc(r.mvp||"–")}</b><br><span class="lead">${esc(r.mvp_reason)}</span></div></div>`;
+    h+=`<p class="lead" style="font-size:13px">Frames analysed: ${r.frames_analyzed} · ball seen in ${r.ball_seen_percent}% of frames</p>`;
+    if(S.aiVideo) h+=`<p><a href="${S.aiVideo}" download="football_ai_view.webm">Save the AI-view match video</a> (use it in your demo)</p>`;
+  } else if(S.game==="Falcon Freeze"){
+    h+=`<ul class="facts">${Object.values(r.players).map(p=>`<li style="color:${p.moved?"var(--bad)":"var(--good)"}">${p.moved?"Moved":"Frozen"}: ${esc(p.reason)}</li>`).join("")}</ul>`;
+  } else {
+    h+=`<div class="grid2"><div><span class="label">Target</span><p dir="auto"><b>${esc(r.target)}</b></p></div><div><span class="label">AI heard</span><p dir="auto"><b>${esc(r.heard||"(nothing)")}</b></p></div></div>
+       <div class="grid2"><div><div class="big">${r.match_percent}%</div>match</div><div><div class="big">${r.points}</div>point(s) for ${esc(r.player)}</div></div><p class="lead">${esc(r.reason)}</p>`;
+  }
+  if(S.snapshot) h+=`<figure style="margin:0"><img alt="What the AI saw" src="${S.snapshot}" style="border-radius:10px"><figcaption class="lead" style="font-size:13px">What the AI saw at the end of the round</figcaption></figure>`;
+  return h;
+}
+function applyReport(r){
+  const g=GAMES[S.game];
+  if(S.game==="Football"){
+    for(const t of ["Team A","Team B"]) S.scores[t]+=r.score[t];
+    r.events.forEach(e=>S.events.push({round:S.round, event:"Goal", who:e.team, reason:e.reason}));
+    S.facts={"Possession by team":Object.entries(r.possession_percent_team).map(([k,v])=>`${k} ${v}%`).join(", "),
+             "Team with the ball the most":r.team_most_possession||"–",
+             "Possession by player":Object.entries(r.possession_percent_player).map(([k,v])=>`${k} ${v}%`).join(", "),
+             "Ball seen":`${r.ball_seen_percent}% of ${r.frames_analyzed} frames`};
+    S.mvp=r.mvp; S.mvpWhy=r.mvp_reason;
+  } else if(S.game==="Falcon Freeze"){
+    for(const [name,p] of Object.entries(r.players)){ const pl=S.players.find(x=>x.name===name); if(!pl) continue;
+      if(!p.moved){ S.scores[pl.team]++; S.pp[name]++; } S.motion[name]=(S.motion[name]||0)+p.motion_percent;
+      S.events.push({round:S.round, event:p.moved?"Moved":"Frozen", who:name, reason:p.reason}); }
+  } else {
+    S.scores[r.player]+=r.points; S.pp[r.player]+=r.points;
+    S.events.push({round:S.round, event:`${r.points} point(s)`, who:r.player, reason:r.reason});
+  }
+  S.report=null; S.reportText=""; S.snapshot=null; S.shots=[]; S.target=null;
+  if(g.type==="individual"){ S.turn++; if(S.turn>=S.players.length){ S.turn=0; S.round++; } } else S.round++;
+  go(S.round>S.rounds?6:4);
+}
+
+/* ---------- 6 FINAL RESULTS ---------- */
+function step6(){
+  const g=GAMES[S.game], rank=Object.entries(S.scores).sort((a,b)=>b[1]-a[1]), tie=rank.length>1&&rank[0][1]===rank[1][1];
+  let mvp=S.mvp, why=S.mvpWhy;
+  if(S.game!=="Football"){
+    const names=Object.keys(S.pp); mvp=names.reduce((a,b)=>S.pp[b]>S.pp[a]||(S.pp[b]===S.pp[a]&&(S.motion?.[b]??0)<(S.motion?.[a]??0))?b:a);
+    why=S.game==="Falcon Freeze"?`${mvp} stayed frozen in ${S.pp[mvp]} round(s), the stillest player`:`${mvp} scored the most points (${S.pp[mvp]})`;
+  }
+  $("#stage").innerHTML=`<div><h2>Final results</h2><p class="lead">${esc(S.game)} · ${S.rounds} round(s)</p></div>
+  ${tie?`<div class="msg info"><b>Tie at ${rank[0][1]}.</b> Tie rule: ${esc(g.tie)}</div>`
+       :`<div><span class="label">Winner</span><div class="big">${esc(rank[0][0])} wins ${g.type==="team"?`${rank[0][1]}–${rank[1][1]}`:`with ${rank[0][1]} points`}</div></div>`}
+  <div class="mvp"><span class="star">MVP</span><div><b>${esc(mvp||"–")}</b><br><span class="lead">${esc(why||"")}</span></div></div>
+  ${Object.keys(S.facts).length?`<div><h3>Match facts</h3><ul class="facts">${Object.entries(S.facts).map(([k,v])=>`<li><b>${esc(k)}:</b> ${esc(v)}</li>`).join("")}</ul></div>`:""}
+  <div><h3>What happened, with reasons</h3><div class="scroll"><table><thead><tr><th>Round</th><th>Event</th><th>Who</th><th>Reason</th></tr></thead>
+  <tbody>${S.events.map(e=>`<tr><td>${e.round}</td><td>${esc(e.event)}</td><td>${esc(e.who)}</td><td dir="auto">${esc(e.reason)}</td></tr>`).join("")||`<tr><td colspan="4">No events.</td></tr>`}</tbody></table></div></div>
+  <div class="btns">${tie?`<button class="go" id="tb">Play the tie-break round</button>`:""}<button class="primary" id="again">Choose another game</button></div>`;
+  if(tie) $("#tb").onclick=()=>{ S.rounds++; go(4); };
+  $("#again").onclick=()=>{ S.scores={}; S.events=[]; S.facts={}; S.mvp=null; S.round=1; S.turn=0; S.game=null; go(1); };
+}
+
+render();
+</script>
+</body>
+</html>
